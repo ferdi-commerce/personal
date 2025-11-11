@@ -1,1 +1,346 @@
-hallo
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deteksi Ukuran & Model Kuku</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f6f8fb;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+      color: white;
+      text-align: center;
+      padding: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    form, .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      width: 340px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      background: #2575fc;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #1e60d4;
+    }
+
+    video, canvas {
+      border-radius: 12px;
+      width: 100%;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.2);
+    }
+
+    #result {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-top: 10px;
+    }
+
+    #models {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 3px 20px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    #modelOptions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .model-card {
+      width: 120px;
+      cursor: pointer;
+      transition: 0.3s;
+      border-radius: 10px;
+      border: 3px solid transparent;
+      text-align: center;
+      background: #fdfdfd;
+    }
+
+    .model-card img {
+      width: 100%;
+      border-radius: 10px;
+      height: 90px;
+      object-fit: cover;
+    }
+
+    .model-card p {
+      margin: 5px 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .model-card:hover {
+      transform: scale(1.05);
+      border-color: #2575fc;
+    }
+
+    #saveDataBtn {
+      display: block;
+      margin: 20px auto 0;
+    }
+
+    /* 📱 RESPONSIVE */
+    @media (max-width: 600px) {
+      header {
+        font-size: 20px;
+        padding: 15px;
+      }
+
+      form, .card {
+        width: 90%;
+      }
+
+      .model-card {
+        width: 45%;
+      }
+
+      .model-card img {
+        height: 80px;
+      }
+
+      #models h3 {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>💅 Sistem Deteksi Bentuk & Model Kuku Otomatis</header>
+
+  <div class="container">
+    <!-- FORM DATA PENGGUNA -->
+    <form id="userForm">
+      <h3>🧍‍♀️ Isi Data Anda</h3>
+      <input type="text" id="name" placeholder="Nama Lengkap" required><br>
+      <input type="number" id="age" placeholder="Umur" required><br>
+      <input type="tel" id="phone" placeholder="Nomor HP" required><br>
+      <button type="submit">Mulai Scan</button>
+    </form>
+
+    <!-- 🌈 Semua Model Kuku Sebelum Scan -->
+    <div id="modelsPreview">
+      <h3>💅 Model Kuku Tersedia</h3>
+      <div id="allModels"></div>
+    </div>
+
+    <!-- KAMERA SCANNER -->
+    <div id="scanner" class="card" style="display:none;">
+      <h3>📷 Arahkan Kamera ke Kuku Anda</h3>
+      <video id="video" width="640" height="480" autoplay></video>
+      <canvas id="canvas" width="640" height="480"></canvas>
+      <div id="result">Menunggu deteksi kuku...</div>
+    </div>
+
+    <!-- MODEL KUKU SESUAI DETEKSI -->
+    <div id="models" style="display:none;">
+      <h3>💅 Pilih Model Kuku Sesuai Bentuk Anda</h3>
+      <div id="modelOptions"></div>
+      <button id="saveDataBtn">Simpan Hasil</button>
+    </div>
+  </div>
+
+  <!-- MediaPipe -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+  <script>
+    const form = document.getElementById('userForm');
+    const scanner = document.getElementById('scanner');
+    const resultDiv = document.getElementById('result');
+    const modelsDiv = document.getElementById('models');
+    const modelOptions = document.getElementById('modelOptions');
+    let selectedModel = null;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      form.style.display = 'none';
+      document.getElementById('modelsPreview').style.display = 'none';
+      scanner.style.display = 'block';
+      startScanner();
+    });
+
+    function startScanner() {
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7
+      });
+
+      hands.onResults((results) => {
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+        if (results.multiHandLandmarks.length > 0) {
+          for (const landmarks of results.multiHandLandmarks) {
+            drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
+            drawLandmarks(ctx, landmarks, {color: '#FF0000', lineWidth: 1});
+          }
+          const nailLength = calculateNailSize(results.multiHandLandmarks[0]);
+          const shape = determineNailShape(nailLength);
+          resultDiv.innerHTML = `✅ Kuku terdeteksi!<br>Panjang: ${nailLength.toFixed(1)} mm<br>Bentuk: ${shape}`;
+          setTimeout(() => {
+            scanner.style.display = 'none';
+            showNailModels(shape);
+          }, 3000);
+        } else {
+          resultDiv.innerHTML = "🚫 Tidak ada kuku terdeteksi.";
+        }
+        ctx.restore();
+      });
+
+      const camera = new Camera(video, {
+        onFrame: async () => await hands.send({image: video}),
+        width: 640,
+        height: 480
+      });
+      camera.start();
+    }
+
+    function calculateNailSize(landmarks) {
+      const tip = landmarks[8];
+      const base = landmarks[5];
+      const dx = (tip.x - base.x) * 100;
+      const dy = (tip.y - base.y) * 100;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      return distance * 10;
+    }
+
+    function determineNailShape(size) {
+      if (size < 25) return "Short Round";
+      if (size < 35) return "Oval";
+      if (size < 45) return "Square";
+      return "Stiletto";
+    }
+
+    // 🎨 Semua Model Awal Ditampilkan Sebelum Scan
+    const allModels = {
+      "Short Round": [
+        { name: "Animal print nails", img: "models/Animal print nails.jpg" },
+        { name: "Apstrak nails", img: "models/Apstrak nails.jpg" }
+      ],
+      "Oval": [
+        { name: "Cat eye nails", img: "models/Cat eye nails.jpg" },
+        { name: "D3 nails", img: "models/D3 nails.jpg" }
+      ],
+      "Square": [
+        { name: "Emoji nails", img: "models/Emoji nails.jpg" },
+        { name: "Square nails", img: "models/model_kuku_square.jpg" }
+      ],
+      "Stiletto": [
+        { name: "Nails blen", img: "models/Nails blen.jpg" },
+        { name: "Rlower nails", img: "models/Rlowers nails.jpg" },
+        { name: "Valvet nails", img: "models/Valvet nails.jpg" }
+      ]
+    };
+
+    const allModelsContainer = document.getElementById('allModels');
+    Object.keys(allModels).forEach(shape => {
+      const title = document.createElement('h4');
+      title.textContent = shape;
+      title.style.textAlign = "center";
+      allModelsContainer.appendChild(title);
+
+      const row = document.createElement('div');
+      row.style.display = "flex";
+      row.style.flexWrap = "wrap";
+      row.style.justifyContent = "center";
+      row.style.gap = "15px";
+
+      allModels[shape].forEach(model => {
+        const card = document.createElement('div');
+        card.className = "model-card";
+        card.innerHTML = `<img src="${model.img}"><p>${model.name}</p>`;
+        row.appendChild(card);
+      });
+
+      allModelsContainer.appendChild(row);
+    });
+
+    // 🎯 Menampilkan model sesuai hasil deteksi
+    function showNailModels(shape) {
+      modelsDiv.style.display = 'block';
+      modelOptions.innerHTML = '';
+
+      (allModels[shape] || []).forEach(model => {
+        const card = document.createElement('div');
+        card.className = "model-card";
+        card.innerHTML = `
+          <img src="${model.img}" alt="${model.name}">
+          <p>${model.name}</p>
+        `;
+        card.onclick = () => {
+          document.querySelectorAll(".model-card").forEach(c => c.style.borderColor = "transparent");
+          card.style.borderColor = "#2575fc";
+          selectedModel = model.name;
+        };
+        modelOptions.appendChild(card);
+      });
+    }
+
+    document.getElementById('saveDataBtn').onclick = () => {
+      if (!selectedModel) {
+        alert("⚠️ Pilih salah satu model kuku terlebih dahulu!");
+        return;
+      }
+      alert(`✅ Data tersimpan!\nNama: ${document.getElementById('name').value}\nModel: ${selectedModel}`);
+    };
+  </script>
+</body>
+</html>
