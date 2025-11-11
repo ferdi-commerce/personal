@@ -156,7 +156,26 @@
   <header>💅 Sistem Deteksi Bentuk & Model Kuku Otomatis</header>
 
   <div class="container">
-    <!-- FORM DATA PENGGUNA -->
+    <!-- 🩷 PROMOSI / PEMBUKA -->
+    <section id="intro" class="card" style="background:#fff5fa;">
+      <h2 style="color:#ff4da6;">Hai bestie! 💅</h2>
+      <p style="font-size:15px; color:#333; line-height:1.6; text-align:justify;">
+        Bosen nunggu lama cuma buat pasang nail art? Sekarang gak perlu lagi!<br><br>
+        Yuk merapat~ Di sini kamu bisa mulai dari lihat-lihat berbagai desain kuku kece sesuai gaya kamu.<br>
+        Setelah desain dipilih, tinggal tentuin bentuk kuku yang kamu mau. Simpel, cepat, dan pastinya seru!<br><br>
+        Desain dulu secara virtual, jadi pas sampai tempat, kamu udah siap tampil cantik tanpa ribet.<br>
+        Lihat sampai akhir ya, siapa tahu desain impianmu ada di sini! 💖
+      </p>
+    </section>
+
+    <!-- 🌈 Semua Model Kuku Sebelum Scan -->
+    <div id="modelsPreview">
+      <h3 style="text-align:center;">💅 Model Kuku Tersedia</h3>
+      <div id="allModels"></div>
+    </div>
+
+
+    <!-- 🧍‍♀️ FORM LOGIN -->
     <form id="userForm">
       <h3>🧍‍♀️ Isi Data Anda</h3>
       <input type="text" id="name" placeholder="Nama Lengkap" required><br>
@@ -164,12 +183,6 @@
       <input type="tel" id="phone" placeholder="Nomor HP" required><br>
       <button type="submit">Mulai Scan</button>
     </form>
-
-    <!-- 🌈 Semua Model Kuku Sebelum Scan -->
-    <div id="modelsPreview">
-      <h3>💅 Model Kuku Tersedia</h3>
-      <div id="allModels"></div>
-    </div>
 
     <!-- KAMERA SCANNER -->
     <div id="scanner" class="card" style="display:none;">
